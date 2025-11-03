@@ -1,0 +1,3 @@
+Target Found. Total Cost: 6
+Path: 
+1 2 4 

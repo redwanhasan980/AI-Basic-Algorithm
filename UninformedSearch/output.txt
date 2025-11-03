@@ -1,0 +1,11 @@
+A B F 
+G K 
+L O 
+
+
+
+C H 
+
+D I 
+Target Founded. Path: 
+A D I 
