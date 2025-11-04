@@ -88,14 +88,16 @@ int main()
     cin >> n;
 
     int maxFitness = n * (n - 1) / 2;
-    cout << "N-Queen Genetic Algorithm (Max Fitness: " << maxFitness << ")\n" << endl;
+    cout << "N-Queen Genetic Algorithm (Max Fitness: " << maxFitness << ")\n"
+         << endl;
 
     vector<Individual> population = createPopulation(n);
     int generation = 0;
 
     while (generation < MAX_GENERATIONS)
     {
-        sort(population.begin(), population.end(), [](Individual &a, Individual &b) { return a.fitness > b.fitness; });
+        sort(population.begin(), population.end(), [](Individual &a, Individual &b)
+             { return a.fitness > b.fitness; });
 
         if (population[0].fitness == maxFitness)
         {
