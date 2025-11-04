@@ -1,0 +1,736 @@
+================================================================================
+                    A* (A-STAR) SEARCH ALGORITHM
+              Line-by-Line Code Explanation in Plain English
+================================================================================
+
+WHAT IS A* ALGORITHM?
+---------------------
+A* is an informed search algorithm that finds the shortest path between two
+nodes in a graph. It's "informed" because it uses a heuristic function to
+guide the search toward the goal efficiently.
+
+A* combines:
+- g(n): Actual cost from start to current node (like Dijkstra)
+- h(n): Estimated cost from current node to goal (heuristic)
+- f(n): g(n) + h(n) - Total estimated cost through this node
+
+Key advantage: Finds optimal path faster than uninformed searches by using
+the heuristic to explore most promising paths first.
+
+
+================================================================================
+LINE 1-2: INCLUDE LIBRARIES AND NAMESPACE
+================================================================================
+
+Line: #include <bits/stdc++.h>
+What it does: Include all standard C++ libraries
+Why: Provides access to vectors, priority queue, file I/O, algorithms, etc.
+
+Line: using namespace std;
+What it does: Allows using standard library without std:: prefix
+Why: Cleaner code (priority_queue instead of std::priority_queue)
+
+
+================================================================================
+LINE 3-4: MAIN FUNCTION AND FILE I/O
+================================================================================
+
+Line: int main()
+What it does: Entry point of the program
+Why: Where execution begins
+
+Line: freopen("input.txt", "r", stdin);
+What it does: Redirect input from file instead of keyboard
+What happens: cin now reads from input.txt
+Why: Convenient for testing with pre-made test cases
+
+Line: freopen("output.txt", "w", stdout);
+What it does: Redirect output to file instead of screen
+What happens: cout now writes to output.txt
+Why: Save results automatically
+
+
+================================================================================
+LINES 5-6: READ GRAPH SIZE
+================================================================================
+
+Line: int n, m;
+What it does: Declare variables for number of nodes and edges
+Purpose:
+  - n: Number of nodes in graph
+  - m: Number of edges (connections)
+
+Line: cin >> n >> m;
+What it does: Read graph dimensions from input file
+Example input: 6 7
+  Means: 6 nodes (vertices) and 7 edges (connections)
+
+
+================================================================================
+LINES 8-9: DECLARE DATA STRUCTURES
+================================================================================
+
+Line: vector<int> heuristic(n, 0);
+What it does: Create array to store heuristic values for each node
+Size: n elements (one per node)
+Initial value: 0 for all
+Purpose: h(n) - estimated distance from each node to goal
+Example: heuristic[0] = 5 means node A is estimated 5 units from goal
+
+Line: vector<vector<pair<int, int>>> adj(n);
+What it does: Create adjacency list to represent the graph
+Structure breakdown:
+  - vector<vector<...>>: List of lists (one list per node)
+  - pair<int, int>: Each pair stores (neighbor_node, edge_weight)
+  - adj[node]: List of all neighbors and their edge costs
+Example: adj[0] = [{1, 3}, {2, 5}]
+  Means: Node 0 connects to node 1 (cost 3) and node 2 (cost 5)
+
+
+================================================================================
+LINES 11-20: READ GRAPH EDGES
+================================================================================
+
+Line: char u, v;
+What it does: Declare variables to read node names as characters
+Why: Nodes named as letters (A, B, C, etc.)
+
+Line: int w;
+What it does: Variable to store edge weight (cost)
+
+Line: for (int i = 0; i < m; ++i)
+What it does: Loop m times to read all edges
+Why: m is number of edges in graph
+
+Line: cin >> u >> v >> w;
+What it does: Read one edge definition
+Format: A B 3
+Meaning: Edge from node A to node B with cost 3
+
+Line: int ui = u - 'A';
+What it does: Convert character to integer index
+Explanation:
+  - 'A' → 0 ('A' - 'A' = 0)
+  - 'B' → 1 ('B' - 'A' = 1)
+  - 'C' → 2 ('C' - 'A' = 2)
+Why: Arrays use integer indices, not characters
+
+Line: int vi = v - 'A';
+What it does: Same conversion for second node
+Result: Both nodes now have integer indices
+
+Line: adj[ui].push_back({vi, w});
+What it does: Add edge from u to v with weight w
+Explanation: Adds pair (neighbor=vi, cost=w) to u's adjacency list
+
+Line: adj[vi].push_back({ui, w});
+What it does: Add reverse edge (undirected graph)
+Why: Creates bidirectional connection (u→v and v→u)
+Result: Can travel both directions along this edge
+
+
+================================================================================
+LINES 22-26: READ HEURISTIC VALUES
+================================================================================
+
+Line: for (int i = 0; i < n; ++i)
+What it does: Loop through all n nodes
+Why: Need heuristic value for every node
+
+Line: cin >> u >> w;
+What it does: Read node name and its heuristic value
+Format: A 5
+Meaning: Node A has heuristic value 5 (estimated distance to goal)
+
+Line: heuristic[u - 'A'] = w;
+What it does: Store heuristic value at correct index
+Example: 'A' → index 0, so heuristic[0] = 5
+Why: h(n) values guide the search toward goal
+
+
+================================================================================
+LINES 28-31: READ START AND GOAL NODES
+================================================================================
+
+Line: char start_c, goal_c;
+What it does: Declare variables for start and goal node names
+
+Line: cin >> start_c >> goal_c;
+What it does: Read starting node and destination node
+Example input: A F
+Meaning: Find path from A to F
+
+Line: int start = start_c - 'A';
+What it does: Convert start node to integer index
+Example: 'A' → 0
+
+Line: int goal = goal_c - 'A';
+What it does: Convert goal node to integer index
+Example: 'F' → 5
+
+
+================================================================================
+LINES 33-36: INITIALIZE A* DATA STRUCTURES
+================================================================================
+
+Line: const int INF = 1e9;
+What it does: Define infinity as very large number (1,000,000,000)
+Why: Represents unreachable or unknown distance
+Purpose: Initial value for unvisited nodes
+
+Line: vector<int> parent(n, -1);
+What it does: Create array to track path (parent of each node)
+Initial value: -1 for all (no parent yet)
+Purpose: Reconstruct path from start to goal later
+Example: parent[3] = 1 means "reached node 3 from node 1"
+
+Line: vector<int> g_cost(n, INF);
+What it does: Create array to store g(n) - actual cost from start
+Initial value: INF for all (infinite distance initially)
+Purpose: Track shortest known distance from start to each node
+Example: g_cost[2] = 7 means "cheapest path to node 2 costs 7"
+
+Line: vector<bool> visited(n, false);
+What it does: Create array to mark processed nodes
+Initial value: false for all (nothing visited yet)
+Purpose: Avoid processing same node multiple times
+Example: visited[1] = true means "already expanded node 1"
+
+
+================================================================================
+LINES 38-40: INITIALIZE PRIORITY QUEUE
+================================================================================
+
+Line: priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+
+What it does: Create min-heap priority queue
+Structure breakdown:
+  - pair<int, int>: Stores (f_cost, node)
+  - vector<pair<int, int>>: Container type
+  - greater<pair<int, int>>: Comparator for min-heap
+
+Behavior:
+  - pq.top(): Returns pair with SMALLEST f_cost
+  - pq.push({cost, node}): Adds element maintaining heap order
+  - pq.pop(): Removes element with smallest f_cost
+
+Why min-heap: A* always expands node with lowest f(n) = g(n) + h(n)
+This is the KEY to A* - always explore most promising path first
+
+Line: g_cost[start] = 0;
+What it does: Set cost to reach start node as zero
+Why: Distance from start to itself is 0
+Logic: We begin at start, so g(start) = 0
+
+Line: pq.push({g_cost[start] + heuristic[start], start});
+What it does: Add start node to priority queue
+Calculation: f(start) = g(start) + h(start) = 0 + h(start)
+Example: If h(start) = 5, pushes {5, 0} to queue
+Why: Initialize search from starting point
+
+
+================================================================================
+LINES 42-43: MAIN A* LOOP START
+================================================================================
+
+Line: while (!pq.empty())
+What it does: Continue while priority queue has nodes to explore
+Why: Keep searching until queue empty or goal found
+Empty queue means: Explored all reachable nodes
+
+
+================================================================================
+LINES 45-47: GET NEXT NODE TO EXPAND
+================================================================================
+
+Line: auto cur = pq.top();
+What it does: Get node with lowest f-cost from priority queue
+Result: cur is pair {f_cost, node}
+Why: A* always expands most promising node (lowest estimated total cost)
+
+Line: pq.pop();
+What it does: Remove this node from queue
+Why: About to process it, so remove from pending list
+
+Line: int node = cur.second;
+What it does: Extract node index from pair
+Explanation: cur.first = f_cost, cur.second = node
+Result: node contains the integer index to process
+
+
+================================================================================
+LINES 49-51: CHECK IF ALREADY VISITED
+================================================================================
+
+Line: if (visited[node])
+What it does: Check if we already processed this node
+Why check: Priority queue might contain same node multiple times with
+           different f-costs (we add when we find better path)
+
+Line: continue;
+What it does: Skip this node, go to next iteration
+Why: Already expanded this node, no need to process again
+
+Line: visited[node] = true;
+What it does: Mark this node as processed
+Purpose: Prevent processing it again in future iterations
+
+
+================================================================================
+LINES 53-54: CHECK IF GOAL REACHED
+================================================================================
+
+Line: if (node == goal)
+What it does: Check if current node is destination
+Why: If we reached goal, search complete (A* guarantees optimal path)
+
+Line: break;
+What it does: Exit main loop immediately
+Why: Found goal, no need to continue searching
+Result: Path reconstruction will follow
+
+
+================================================================================
+LINES 56-79: EXPLORE NEIGHBORS (MAIN A* LOGIC)
+================================================================================
+
+Line: for (auto it : adj[node])
+What it does: Loop through all neighbors of current node
+Example: If node = 0, iterate through adj[0] = [{1, 3}, {2, 5}]
+Purpose: Consider all possible next moves from current position
+
+Line: int ch = it.first;
+What it does: Extract neighbor node index
+Example: From {1, 3}, ch = 1
+
+Line: int wt = it.second;
+What it does: Extract edge weight (cost to reach neighbor)
+Example: From {1, 3}, wt = 3
+Meaning: Cost to move from current node to neighbor is 3
+
+Line: if (visited[ch])
+What it does: Check if neighbor already processed
+Why: No point reconsidering already expanded nodes
+
+Line: continue;
+What it does: Skip this neighbor, check next one
+Why: visited[ch] = true means optimal path to ch already found
+
+
+================================================================================
+LINES 66-78: UPDATE COSTS AND ADD TO QUEUE (CORE A* UPDATE)
+================================================================================
+
+Line: int new_g_cost = g_cost[node] + wt;
+What it does: Calculate cost to reach neighbor through current node
+Explanation:
+  - g_cost[node]: Cost to reach current node from start
+  - wt: Cost of edge from current to neighbor
+  - new_g_cost: Total cost from start → current → neighbor
+Example: g_cost[1] = 3, wt = 2, then new_g_cost = 5
+
+Line: if (new_g_cost < g_cost[ch])
+What it does: Check if this path to neighbor is better than previous best
+Comparison:
+  - new_g_cost: Cost via current path
+  - g_cost[ch]: Previously known best cost (INF if never reached)
+Logic: Only update if we found shorter path
+
+Line: g_cost[ch] = new_g_cost;
+What it does: Update neighbor's g-cost to this better value
+Why: Found cheaper way to reach this neighbor
+Example: g_cost[2] = 10 → found path with cost 7 → g_cost[2] = 7
+
+Line: parent[ch] = node;
+What it does: Record that we reached neighbor from current node
+Purpose: Path reconstruction later
+Example: parent[2] = 1 means "reached node 2 from node 1"
+Result: Can trace back from goal to start using parent array
+
+Line: int f_cost = g_cost[ch] + heuristic[ch];
+What it does: Calculate f(n) = g(n) + h(n) for neighbor
+Breakdown:
+  - g_cost[ch]: Actual cost from start to neighbor (known)
+  - heuristic[ch]: Estimated cost from neighbor to goal (heuristic)
+  - f_cost: Total estimated cost: start → neighbor → goal
+Example: g_cost[2] = 7, heuristic[2] = 4, f_cost = 11
+
+Line: pq.push({f_cost, ch});
+What it does: Add neighbor to priority queue with f-cost
+Format: {total_estimated_cost, node_index}
+Example: pq.push({11, 2}) means "node 2 with total estimate 11"
+Effect: Queue automatically maintains order (smallest f-cost first)
+
+Why this works: A* explores nodes in order of most promising total path
+- Low f(n) = close to start + estimated close to goal = likely on optimal path
+- Priority queue ensures we always expand lowest f(n) next
+
+
+================================================================================
+LINES 81-85: CHECK IF GOAL WAS REACHED
+================================================================================
+
+Line: if (!visited[goal])
+What it does: Check if goal node was never visited
+Meaning: Priority queue emptied without reaching goal
+Why this happens: Goal unreachable from start (disconnected graph)
+
+Lines 83-85: Handle unreachable case
+What it does: Print error message and exit
+Output: "No path found from A to F"
+Result: Program terminates, no path exists
+
+
+================================================================================
+LINES 87-90: RECONSTRUCT PATH
+================================================================================
+
+Line: vector<int> path;
+What it does: Create empty list to store path from start to goal
+Purpose: Will build path by following parent pointers backward
+
+Line: for (int cur = goal; cur != -1; cur = parent[cur])
+What it does: Trace path backward from goal to start
+Loop breakdown:
+  - Start: cur = goal (destination node)
+  - Condition: cur != -1 (stop when reaching start's parent)
+  - Update: cur = parent[cur] (move to parent)
+  
+How it works:
+  Iteration 1: cur = goal (e.g., 5)
+  Iteration 2: cur = parent[5] (e.g., 3)
+  Iteration 3: cur = parent[3] (e.g., 1)
+  Iteration 4: cur = parent[1] (e.g., 0)
+  Iteration 5: cur = parent[0] (= -1, stop)
+
+Line: path.push_back(cur);
+What it does: Add current node to path list
+Result: path = [goal, parent_of_goal, ..., start]
+Note: Path is backward (goal to start)
+
+Line: reverse(path.begin(), path.end());
+What it does: Reverse path to go from start to goal
+Before: [5, 3, 1, 0] (goal to start)
+After: [0, 1, 3, 5] (start to goal)
+Why: Path should show journey from start to destination
+
+
+================================================================================
+LINES 92-97: OUTPUT PATH
+================================================================================
+
+Line: cout << "Path: ";
+What it does: Print label for path output
+
+Line: for (auto it : path)
+What it does: Loop through each node in path
+Example: path = [0, 1, 3, 5]
+
+Line: cout << char('A' + it) << " ";
+What it does: Convert node index back to letter and print
+Conversion:
+  - it = 0 → 'A' + 0 = 'A'
+  - it = 1 → 'A' + 1 = 'B'
+  - it = 5 → 'A' + 5 = 'F'
+Output example: "A B D F "
+
+Line: cout << endl;
+What it does: Print newline after path
+
+
+================================================================================
+LINES 98-99: OUTPUT TOTAL COST
+================================================================================
+
+Line: cout << "Distance: " << g_cost[goal] << endl;
+What it does: Print total cost of optimal path
+Explanation:
+  - g_cost[goal]: Actual cost from start to goal
+  - This is guaranteed to be optimal by A*
+Example output: "Distance: 14"
+Meaning: Shortest path from start to goal costs 14 units
+
+
+================================================================================
+HOW A* ALGORITHM WORKS - COMPLETE FLOW
+================================================================================
+
+INITIALIZATION:
+1. Read graph structure (nodes, edges, weights)
+2. Read heuristic values for each node (h(n))
+3. Read start and goal nodes
+4. Initialize:
+   - g_cost[start] = 0 (cost to reach start is 0)
+   - g_cost[others] = INF (unknown distance)
+   - Add start to priority queue with f = g + h
+
+MAIN LOOP (Expand most promising nodes):
+  
+  STEP 1: Get node with lowest f(n)
+    - Extract from priority queue (min-heap)
+    - This is the node with lowest total estimated cost
+  
+  STEP 2: Check if already visited
+    - If yes: Skip (already found optimal path to it)
+    - If no: Mark as visited and continue
+  
+  STEP 3: Check if goal reached
+    - If yes: Stop! Found optimal path
+    - A* guarantees this is shortest path
+  
+  STEP 4: Explore neighbors
+    For each neighbor of current node:
+      
+      a) Skip if already visited
+      
+      b) Calculate new g-cost via current node:
+         new_g = g_cost[current] + edge_weight
+      
+      c) If new_g < g_cost[neighbor]:
+         - Found better path to neighbor
+         - Update g_cost[neighbor] = new_g
+         - Update parent[neighbor] = current
+         - Calculate f(neighbor) = g(neighbor) + h(neighbor)
+         - Add to priority queue with f-cost
+  
+  STEP 5: Repeat until goal found or queue empty
+
+PATH RECONSTRUCTION:
+1. Start at goal node
+2. Follow parent pointers backward to start
+3. Reverse the path
+4. Output: Start → ... → Goal
+
+
+================================================================================
+KEY CONCEPTS EXPLAINED
+================================================================================
+
+G-COST (Actual Cost):
+- g(n) = actual shortest distance from start to node n
+- Known value (calculated during search)
+- Increases as we move away from start
+- g(start) = 0, g(goal) = shortest path length
+
+H-COST (Heuristic - Estimated Cost):
+- h(n) = estimated distance from node n to goal
+- Provided as input (domain knowledge)
+- Never changes during search
+- Should be admissible: never overestimate actual distance
+- h(goal) = 0 (at goal, distance to goal is 0)
+
+F-COST (Total Estimated Cost):
+- f(n) = g(n) + h(n)
+- Total estimated cost: start → n → goal
+- g(n): known cost to reach n
+- h(n): estimated remaining cost to goal
+- A* always expands node with lowest f(n)
+
+PRIORITY QUEUE:
+- Stores nodes waiting to be expanded
+- Ordered by f-cost (lowest first)
+- Same node can appear multiple times
+- Always process node with lowest f(n)
+- This is why A* is efficient
+
+
+================================================================================
+WHY A* IS OPTIMAL AND EFFICIENT
+================================================================================
+
+OPTIMALITY:
+If heuristic is admissible (never overestimates):
+- A* guaranteed to find shortest path
+- When goal reached, it's via optimal route
+- No need to continue searching
+
+EFFICIENCY:
+- Heuristic guides search toward goal
+- Avoids exploring unpromising directions
+- Much faster than uninformed search (BFS, Dijkstra)
+- Only explores necessary nodes
+
+COMPARISON:
+- BFS: Explores all nodes at distance d before d+1 (no heuristic)
+- Dijkstra: Explores by actual cost g(n) only (no goal knowledge)
+- A*: Explores by g(n) + h(n) (uses goal knowledge efficiently)
+
+
+================================================================================
+EXAMPLE RUN TRACE
+================================================================================
+
+Graph:
+  A --3-- B --2-- D
+  |       |       |
+  5       1       4
+  |       |       |
+  C ------E ------F (Goal)
+        2      3
+
+Heuristics (straight-line distance to F):
+  A: 7, B: 5, C: 6, D: 3, E: 3, F: 0
+
+Start: A, Goal: F
+
+INITIALIZATION:
+- g_cost[A] = 0, others = INF
+- pq = [{7, A}]  (f = 0 + 7)
+
+ITERATION 1: Expand A
+- Pop: A (f=7)
+- Neighbors: B, C
+- B: g=3, h=5, f=8, pq.push({8, B})
+- C: g=5, h=6, f=11, pq.push({11, C})
+- pq = [{8, B}, {11, C}]
+
+ITERATION 2: Expand B
+- Pop: B (f=8)
+- Neighbors: A(visited), D, E
+- D: g=3+2=5, h=3, f=8, pq.push({8, D})
+- E: g=3+1=4, h=3, f=7, pq.push({7, E})
+- pq = [{7, E}, {8, D}, {11, C}]
+
+ITERATION 3: Expand E
+- Pop: E (f=7)
+- Neighbors: B, C, F
+- F: g=4+3=7, h=0, f=7, pq.push({7, F})
+- pq = [{7, F}, {8, D}, {11, C}, ...]
+
+ITERATION 4: Expand F
+- Pop: F (f=7)
+- F == goal → STOP!
+
+PATH RECONSTRUCTION:
+- parent[F] = E
+- parent[E] = B
+- parent[B] = A
+- parent[A] = -1
+- Path: A → B → E → F
+- Distance: 7
+
+
+================================================================================
+INPUT FILE FORMAT EXAMPLE
+================================================================================
+
+6 7                    ← 6 nodes, 7 edges
+A B 3                  ← Edge A-B with weight 3
+A C 5                  ← Edge A-C with weight 5
+B D 2                  ← Edge B-D with weight 2
+B E 1                  ← Edge B-E with weight 1
+C E 2                  ← Edge C-E with weight 2
+D F 4                  ← Edge D-F with weight 4
+E F 3                  ← Edge E-F with weight 3
+A 7                    ← Heuristic: A to goal = 7
+B 5                    ← Heuristic: B to goal = 5
+C 6                    ← Heuristic: C to goal = 6
+D 3                    ← Heuristic: D to goal = 3
+E 3                    ← Heuristic: E to goal = 3
+F 0                    ← Heuristic: F to goal = 0 (is goal)
+A F                    ← Find path from A to F
+
+
+================================================================================
+OUTPUT FILE FORMAT
+================================================================================
+
+Path: A B E F
+Distance: 7
+
+
+================================================================================
+ADMISSIBLE HEURISTIC
+================================================================================
+
+DEFINITION:
+A heuristic h(n) is admissible if it never overestimates the actual cost
+to reach the goal from node n.
+
+Mathematically: h(n) ≤ actual_cost(n, goal)
+
+EXAMPLES:
+
+Good (Admissible):
+- Straight-line distance (never longer than actual path)
+- Manhattan distance in grid (counts minimum moves)
+- Zero (always admissible but not helpful)
+
+Bad (Not Admissible):
+- Overestimated distances
+- Would cause A* to miss optimal path
+
+WHY IT MATTERS:
+- Admissible heuristic → A* finds optimal path
+- Non-admissible → A* might find suboptimal path
+- Better heuristic → Fewer nodes explored → Faster
+
+
+================================================================================
+COMMON VARIATIONS
+================================================================================
+
+A* WITH DIFFERENT HEURISTICS:
+1. Manhattan distance (grid-based problems)
+2. Euclidean distance (straight-line distance)
+3. Chebyshev distance (diagonal moves allowed)
+4. Custom domain-specific heuristics
+
+WEIGHTED A* (WA*):
+- f(n) = g(n) + w * h(n), where w > 1
+- Trades optimality for speed
+- Finds "good enough" paths faster
+
+IDA* (Iterative Deepening A*):
+- Space-efficient version
+- Uses depth-first search with iterative deepening
+- Better for memory-constrained environments
+
+
+================================================================================
+TIME AND SPACE COMPLEXITY
+================================================================================
+
+TIME COMPLEXITY:
+- Worst case: O(b^d) where b = branching factor, d = depth
+- Average case: Much better with good heuristic
+- Best case: O(d) with perfect heuristic
+
+SPACE COMPLEXITY:
+- O(b^d) for storing nodes in priority queue
+- Can grow large for big graphs
+- Trade-off: Better heuristic = less space needed
+
+COMPARED TO OTHER ALGORITHMS:
+- BFS: O(b^d) time, O(b^d) space
+- Dijkstra: O((V+E)log V) time
+- A*: Often faster than both with good heuristic
+
+
+================================================================================
+PRACTICAL TIPS
+================================================================================
+
+CHOOSING HEURISTIC:
+1. Must be admissible (never overestimate)
+2. Closer to actual cost = better performance
+3. Easier to compute = faster per node
+4. Domain knowledge helps
+
+WHEN TO USE A*:
+✓ Have good admissible heuristic
+✓ Need optimal path
+✓ Can afford space for priority queue
+✓ Graph is large (A* outperforms BFS/Dijkstra)
+
+WHEN NOT TO USE A*:
+✗ No good heuristic available (use Dijkstra)
+✗ Any path acceptable (use BFS)
+✗ Memory very limited (use IDA*)
+✗ Very small graph (overhead not worth it)
+
+
+This is the complete line-by-line explanation of A* Search Algorithm!
+Every line explained in plain English with purpose, examples, and theory.
+
+================================================================================

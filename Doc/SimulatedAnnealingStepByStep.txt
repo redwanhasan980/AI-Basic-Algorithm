@@ -1,0 +1,739 @@
+================================================================================
+              SIMULATED ANNEALING FOR 8-PUZZLE PROBLEM
+              Line-by-Line Code Explanation in Plain English
+================================================================================
+
+WHAT IS SIMULATED ANNEALING?
+-----------------------------
+Simulated Annealing is inspired by the physical process of heating and slowly
+cooling metal to remove defects and reach a low-energy stable state.
+
+In optimization:
+- High temperature = Explore freely (accept worse moves)
+- Low temperature = Exploit current best (accept only better moves)
+- Cooling down gradually = Transition from exploration to exploitation
+
+For 8-Puzzle: Find the sequence of moves to reach the goal state from initial
+state by intelligently exploring the search space.
+
+
+================================================================================
+LINE 1-2: INCLUDE LIBRARIES AND NAMESPACE
+================================================================================
+
+Line: #include <bits/stdc++.h>
+What it does: Include all standard C++ libraries
+Why: Gives access to vectors, math functions, random numbers, file I/O, etc.
+
+Line: using namespace std;
+What it does: Allows using standard library functions without std:: prefix
+Why: Makes code cleaner (cout instead of std::cout)
+
+
+================================================================================
+LINES 4-26: MANHATTAN DISTANCE HEURISTIC FUNCTION
+================================================================================
+
+Line: int calculateHeuristic(vector<vector<int>> &state, vector<vector<int>> &goal)
+What it does: Declare function to calculate Manhattan distance
+Parameters: Current state and goal state (both 3x3 grids)
+Returns: Integer representing total Manhattan distance
+Why: Measures how far current state is from goal state
+
+Line: int heuristic = 0;
+What it does: Initialize counter to zero
+Why: Will accumulate total distance for all tiles
+
+Line: for (int i = 0; i < 3; i++)
+What it does: Start outer loop for rows
+Why: Need to check every position in the 3x3 grid
+
+Line: for (int j = 0; j < 3; j++)
+What it does: Start inner loop for columns
+Why: Combined with outer loop, visits all 9 positions
+
+Line: if (state[i][j] != 0)
+What it does: Check if current position is not blank tile
+Why: Blank tile (0) doesn't contribute to heuristic
+
+Line: for (int x = 0; x < 3; x++)
+What it does: Start loop to search goal state rows
+Why: Need to find where this tile should be in goal
+
+Line: for (int y = 0; y < 3; y++)
+What it does: Start loop to search goal state columns
+Why: Combined with x loop, searches all goal positions
+
+Line: if (state[i][j] == goal[x][y])
+What it does: Check if current tile matches goal position
+Why: When found, we know where tile should be
+
+Line: heuristic += abs(i - x) + abs(j - y);
+What it does: Add Manhattan distance for this tile
+Explanation:
+  - abs(i - x): Vertical distance (row difference)
+  - abs(j - y): Horizontal distance (column difference)
+  - Sum: Total moves needed to reach correct position
+  - +=: Add to running total
+
+Example:
+  Tile 5 is at position (2, 1) in current state
+  Tile 5 should be at (1, 2) in goal state
+  Distance = |2-1| + |1-2| = 1 + 1 = 2 moves
+
+Line: return heuristic;
+What it does: Give back the total distance
+Why: This value tells us how far we are from goal
+
+
+================================================================================
+LINES 30-38: ACCEPTANCE PROBABILITY FUNCTION
+================================================================================
+
+Line: double acceptanceProbability(int currentH, int nextH, double temperature)
+What it does: Calculate probability of accepting a move
+Parameters:
+  - currentH: Heuristic of current state
+  - nextH: Heuristic of neighbor state
+  - temperature: Current temperature value
+Returns: Probability between 0 and 1
+Why: Determines whether to accept worse solutions
+
+Line: if (nextH < currentH)
+What it does: Check if neighbor is better than current
+Why: If better, we always want to accept it
+
+Line: return 1.0;
+What it does: Return 100% acceptance probability
+Why: Always accept improvements
+
+Line: int deltaE = nextH - currentH;
+What it does: Calculate energy difference (how much worse)
+Why: Need this for probability formula
+
+Line: return exp(-deltaE / temperature);
+What it does: Calculate Boltzmann probability
+Formula breakdown:
+  - deltaE: How much worse the move is (positive value)
+  - temperature: Current temperature
+  - -deltaE/temperature: Negative ratio (becomes more negative as T drops)
+  - exp(...): Exponential function
+  
+Behavior:
+  - High temperature: exp(-small negative) ≈ high probability
+  - Low temperature: exp(-large negative) ≈ low probability
+  - Larger deltaE: Lower probability (worse moves less likely)
+
+Example:
+  deltaE = 2 (neighbor is 2 worse)
+  temperature = 100
+  Probability = e^(-2/100) = e^(-0.02) ≈ 0.98 (98% chance)
+  
+  deltaE = 2 (same difference)
+  temperature = 1
+  Probability = e^(-2/1) = e^(-2) ≈ 0.135 (13.5% chance)
+
+
+================================================================================
+LINES 40-41: MAIN FUNCTION START
+================================================================================
+
+Line: int main()
+What it does: Start of main program execution
+Why: Entry point for the program
+
+Line: srand(time(0));
+What it does: Seed random number generator with current time
+Why: Ensures different random numbers each run
+
+
+================================================================================
+LINES 42-43: FILE INPUT/OUTPUT SETUP
+================================================================================
+
+Line: freopen("input.txt", "r", stdin);
+What it does: Redirect standard input to read from input.txt
+Why: Read puzzle states from file instead of keyboard
+
+Line: freopen("output.txt", "w", stdout);
+What it does: Redirect standard output to write to output.txt
+Why: Save results to file instead of console
+
+
+================================================================================
+LINES 46-50: DECLARE DATA STRUCTURES
+================================================================================
+
+Line: vector<vector<int>> State(3, vector<int>(3));
+What it does: Create 3x3 grid for current state
+Explanation:
+  - vector<vector<int>>: 2D vector of integers
+  - (3, vector<int>(3)): 3 rows, each with 3 columns
+  - State: Holds current puzzle configuration
+
+Line: vector<vector<int>> GoalState(3, vector<int>(3));
+What it does: Create 3x3 grid for goal state
+Why: Need to know target configuration
+
+Line: int i, j;
+What it does: Declare loop variables
+Why: Used for iterating through grid positions
+
+
+================================================================================
+LINES 52-62: READ INPUT FROM FILE
+================================================================================
+
+Line: for (i = 0; i < 3; i++)
+What it does: Loop through rows of initial state
+Why: Need to read all 9 positions
+
+Line: for (j = 0; j < 3; j++)
+What it does: Loop through columns
+Why: Read each position in current row
+
+Line: cin >> State[i][j];
+What it does: Read one number from input file
+What happens: Fills State grid with initial puzzle configuration
+
+Example input.txt format:
+1 2 3
+4 0 5
+6 7 8
+
+Lines 57-62: Same process but reading goal state
+Result: Both State and GoalState grids filled with data
+
+
+================================================================================
+LINES 68-71: INITIALIZE SIMULATED ANNEALING PARAMETERS
+================================================================================
+
+Line: double temperature = 100.0;
+What it does: Set initial temperature high
+Why: High temperature allows exploration and accepting worse moves
+Typical range: 10 to 1000
+
+Line: double coolingRate = 0.995;
+What it does: Set cooling rate for temperature reduction
+How it works: temperature = temperature * 0.995 each iteration
+Effect: Temperature drops slowly (99.5% of previous value)
+Why slow: Gives algorithm time to explore before becoming greedy
+Typical range: 0.95 to 0.999
+
+Line: double minTemperature = 0.01;
+What it does: Set stopping threshold
+Why: When temperature drops below this, stop searching
+Meaning: System has "frozen" into final state
+
+Line: int maxIterations = 10000;
+What it does: Set maximum number of iterations
+Why: Safety limit to prevent infinite loops
+Purpose: Stop even if solution not found
+
+
+================================================================================
+LINE 73: ITERATION COUNTER
+================================================================================
+
+Line: int it = 1;
+What it does: Initialize iteration counter
+Why: Track how many steps algorithm takes
+
+
+================================================================================
+LINE 78: MAIN LOOP START
+================================================================================
+
+Line: while (temperature > minTemperature && it <= maxIterations)
+What it does: Continue loop while two conditions are true:
+  Condition 1: temperature > minTemperature (not frozen yet)
+  Condition 2: it <= maxIterations (safety limit not reached)
+Why: Loop until system cools down or max iterations reached
+
+
+================================================================================
+LINES 84-85: EVALUATE CURRENT STATE
+================================================================================
+
+Line: int h = calculateHeuristic(State, GoalState);
+What it does: Calculate Manhattan distance for current state
+Result: h = 0 means goal reached, h > 0 means still solving
+Example: h = 5 means tiles are total of 5 moves away from correct positions
+
+
+================================================================================
+LINES 87-100: DISPLAY ITERATION INFORMATION
+================================================================================
+
+Line: cout << "-----------------------" << endl;
+What it does: Print separator line
+Why: Makes output readable, separates iterations
+
+Line: cout << "Iteration: " << it++ << endl;
+What it does: Print current iteration number and increment counter
+Why: Shows progress, it++ increments for next iteration
+
+Line: cout << "Temperature: " << fixed << setprecision(4) << temperature << endl;
+What it does: Print temperature with 4 decimal places
+Why: Monitor cooling process
+
+Line: cout << "Current Heuristic (h): " << h << endl;
+What it does: Print Manhattan distance
+Why: Shows how close we are to goal
+
+Lines 92-100: Print current puzzle state
+What it does: Display 3x3 grid showing current configuration
+Why: Visual verification of puzzle state
+
+
+================================================================================
+LINES 105-109: CHECK IF GOAL REACHED
+================================================================================
+
+Line: if (h == 0)
+What it does: Check if Manhattan distance is zero
+Meaning: All tiles in correct positions (goal reached!)
+
+Line: cout << "\n*** GOAL FOUND! ***" << endl;
+What it does: Print success message
+Why: Celebrate finding solution
+
+Line: cout << "Solution found at iteration " << (it - 1) << endl;
+What it does: Report which iteration found solution
+Why: it++ already incremented, so subtract 1
+
+Line: break;
+What it does: Exit the main while loop immediately
+Why: No need to continue searching once goal found
+
+
+================================================================================
+LINES 115-124: FIND BLANK TILE POSITION
+================================================================================
+
+Line: int blankX, blankY;
+What it does: Declare variables for blank tile coordinates
+Why: Need to know where blank is to generate moves
+
+Lines 116-124: Nested loops to search for blank (0)
+What it does: Check each position until finding 0
+When found: Store row in blankX, column in blankY
+Why: Blank tile is the one we move to create neighbors
+
+
+================================================================================
+LINES 127-128: PREPARE NEIGHBOR STORAGE
+================================================================================
+
+Line: vector<vector<vector<int>>> neighbours;
+What it does: Create list to store neighbor states
+Structure: 3D vector (list of 2D grids)
+Why: Will hold 2-4 possible moves from current state
+
+
+================================================================================
+LINES 131-136: GENERATE "MOVE UP" NEIGHBOR
+================================================================================
+
+Line: if (blankX - 1 >= 0)
+What it does: Check if blank can move up (not in top row)
+Why: Can't move up if already at row 0
+
+Line: vector<vector<int>> newState = State;
+What it does: Create copy of current state
+Why: Don't want to modify original State
+
+Line: swap(newState[blankX][blankY], newState[blankX - 1][blankY]);
+What it does: Swap blank with tile above it
+Effect: Blank moves up, tile moves down
+Visual example:
+  Before:      After:
+  1 2 3        1 0 3
+  4 0 5   →    4 2 5
+  6 7 8        6 7 8
+
+Line: neighbours.push_back(newState);
+What it does: Add this new state to neighbors list
+Why: This is one possible next move
+
+
+================================================================================
+LINES 139-144: GENERATE "MOVE DOWN" NEIGHBOR
+================================================================================
+
+Line: if (blankX + 1 < 3)
+What it does: Check if blank can move down (not in bottom row)
+Why: Can't move down if already at row 2
+
+Lines 141-144: Same process as move up, but swapping with tile below
+Effect: Blank moves down
+
+
+================================================================================
+LINES 147-152: GENERATE "MOVE LEFT" NEIGHBOR
+================================================================================
+
+Line: if (blankY - 1 >= 0)
+What it does: Check if blank can move left (not in leftmost column)
+Why: Can't move left if already at column 0
+
+Line: swap(newState[blankX][blankY], newState[blankX][blankY - 1]);
+What it does: Swap blank with tile to its left
+Effect: Blank moves left
+
+
+================================================================================
+LINES 155-160: GENERATE "MOVE RIGHT" NEIGHBOR
+================================================================================
+
+Line: if (blankY + 1 < 3)
+What it does: Check if blank can move right (not in rightmost column)
+
+Line: swap(newState[blankX][blankY], newState[blankX][blankY + 1]);
+What it does: Swap blank with tile to its right
+Effect: Blank moves right
+
+
+================================================================================
+LINES 165-167: SELECT RANDOM NEIGHBOR
+================================================================================
+
+Line: int randomIdx = rand() % neighbours.size();
+What it does: Generate random index
+Explanation:
+  - rand(): Random integer
+  - % neighbours.size(): Modulo gives 0 to (size-1)
+  - Result: Random valid index into neighbors list
+Example: If 4 neighbors exist, randomIdx is 0, 1, 2, or 3
+
+Line: vector<vector<int>> nextState = neighbours[randomIdx];
+What it does: Pick the randomly selected neighbor
+Why: Simulated Annealing explores randomly (not always best move)
+
+
+================================================================================
+LINES 172-174: CALCULATE ENERGY DIFFERENCE
+================================================================================
+
+Line: int nextH = calculateHeuristic(nextState, GoalState);
+What it does: Calculate heuristic for the random neighbor
+Result: How good is this neighbor state?
+
+Line: int deltaE = nextH - h;
+What it does: Calculate change in energy
+Values:
+  - deltaE < 0: Neighbor is better (improvement)
+  - deltaE = 0: Neighbor is same quality (sideways move)
+  - deltaE > 0: Neighbor is worse (uphill move)
+
+Line: cout << "Random neighbor selected: h(next) = " << nextH << ", ΔE = " << deltaE << endl;
+What it does: Display neighbor quality and energy change
+
+
+================================================================================
+LINES 179-181: CALCULATE ACCEPTANCE PROBABILITY
+================================================================================
+
+Line: double prob = acceptanceProbability(h, nextH, temperature);
+What it does: Call function to calculate acceptance probability
+Result:
+  - If neighbor better: prob = 1.0 (always accept)
+  - If neighbor worse: prob = e^(-deltaE/temperature)
+
+Line: double randomProb = (double)rand() / RAND_MAX;
+What it does: Generate random probability between 0 and 1
+Explanation:
+  - rand(): Random integer
+  - RAND_MAX: Maximum random value
+  - Division: Gives decimal between 0.0 and 1.0
+Purpose: Compare against calculated probability for decision
+
+
+================================================================================
+LINES 184-202: ACCEPTANCE DECISION
+================================================================================
+
+Line: if (prob > randomProb)
+What it does: Compare calculated probability with random value
+Decision logic:
+  - prob = 1.0, randomProb = 0.7 → Accept (1.0 > 0.7)
+  - prob = 0.2, randomProb = 0.1 → Accept (0.2 > 0.1)
+  - prob = 0.2, randomProb = 0.9 → Reject (0.2 < 0.9)
+
+Line: State = nextState;
+What it does: Move to the neighbor state (accept the move)
+Effect: Update current state to the selected neighbor
+
+Line: if (deltaE < 0)
+What it does: Check if this was an improvement
+Line: cout << "✓ ACCEPTED (Better solution)" << endl;
+What it does: Indicate why accepted (downhill move)
+
+Line: else if (deltaE == 0)
+What it does: Check if same quality
+Line: cout << "✓ ACCEPTED (Sideways move)" << endl;
+What it does: Indicate neutral move
+
+Line: else
+What it does: Must be deltaE > 0 (worse solution)
+Line: cout << "✓ ACCEPTED (Worse solution, P=" << ... << prob << ")" << endl;
+What it does: Show accepted worse move with probability
+Why accepted: Random chance based on temperature
+
+Lines 200-202: Rejection case
+What it does: Move not accepted, State remains unchanged
+Output: Show rejection with probability value
+
+
+================================================================================
+LINES 207-208: COOLING SCHEDULE
+================================================================================
+
+Line: temperature *= coolingRate;
+What it does: Reduce temperature by multiplication
+Explanation:
+  - *= is shorthand for: temperature = temperature * coolingRate
+  - 0.995 means keep 99.5% of previous temperature
+  - Each iteration, temperature drops by 0.5%
+
+Example progression:
+  Iteration 1: temp = 100.0
+  Iteration 2: temp = 100.0 * 0.995 = 99.5
+  Iteration 3: temp = 99.5 * 0.995 = 99.0025
+  Iteration 100: temp ≈ 60.6
+  Iteration 1000: temp ≈ 0.67
+
+Effect: System gradually "cools down"
+Result: Probability of accepting worse moves decreases over time
+
+
+================================================================================
+LINE 210: END OF MAIN LOOP
+================================================================================
+
+Line: } // End of main loop
+What it does: Close the while loop
+When reached: Either goal found, temperature too low, or max iterations
+
+
+================================================================================
+LINES 215-217: CALCULATE FINAL STATE
+================================================================================
+
+Line: int finalH = calculateHeuristic(State, GoalState);
+What it does: Measure final state quality
+Why: Determine if we succeeded or how close we got
+
+
+================================================================================
+LINES 219-223: PRINT TERMINATION BANNER
+================================================================================
+
+Lines 219-223: Print header and summary
+What it does: Display termination information
+Why: Clearly show algorithm has finished
+
+
+================================================================================
+LINES 224-235: DETERMINE AND DISPLAY OUTCOME
+================================================================================
+
+Line: cout << "Total Iterations: " << (it - 1) << endl;
+What it does: Report how many iterations ran
+Why: Performance metric
+
+Line: cout << "Final Temperature: " << ... << temperature << endl;
+What it does: Show ending temperature
+Why: Indicates how much cooling occurred
+
+Line: cout << "Final Heuristic: " << finalH << endl;
+What it does: Show final Manhattan distance
+Result: 0 = success, >0 = partial solution
+
+Lines 227-235: Conditional status reporting
+What it does: Determine why algorithm stopped
+
+Line: if (finalH == 0)
+Check: Did we reach goal?
+Output: "SUCCESS - Goal state reached!"
+
+Line: else if (temperature <= minTemperature)
+Check: Did we freeze without finding goal?
+Output: "FAILED - Temperature dropped below threshold"
+
+Line: else if (it > maxIterations)
+Check: Did we hit iteration limit?
+Output: "FAILED - Maximum iterations exceeded"
+
+
+================================================================================
+LINES 237-245: DISPLAY FINAL STATE
+================================================================================
+
+Lines 237-245: Print final puzzle configuration
+What it does: Show ending state of puzzle
+Why: Visual verification of final result
+
+
+================================================================================
+LINE 246: CLOSING
+================================================================================
+
+Line: cout << "==..." << endl;
+What it does: Print closing banner
+Why: Clear end of output
+
+
+================================================================================
+HOW THE ALGORITHM WORKS - COMPLETE FLOW
+================================================================================
+
+INITIALIZATION PHASE:
+1. Read initial puzzle state from file
+2. Read goal state from file
+3. Set temperature = 100.0 (hot, exploratory)
+4. Set cooling rate = 0.995
+5. Set iteration counter = 1
+
+MAIN LOOP (Repeat until frozen or goal found):
+
+  STEP 1: Evaluate current state
+    - Calculate Manhattan distance (h)
+    - If h = 0, goal found → STOP
+  
+  STEP 2: Generate possible moves
+    - Find blank tile position
+    - Try move up (if possible)
+    - Try move down (if possible)
+    - Try move left (if possible)
+    - Try move right (if possible)
+    - Result: 2-4 neighbor states
+  
+  STEP 3: Select random neighbor
+    - Pick random move from possible moves
+    - This is key difference from Hill Climbing
+  
+  STEP 4: Calculate energy difference
+    - Evaluate neighbor's heuristic
+    - Compute deltaE = nextH - currentH
+    - Negative deltaE = improvement
+    - Positive deltaE = worsening
+  
+  STEP 5: Decide whether to accept move
+    - If improvement (deltaE < 0): Always accept
+    - If worsening (deltaE > 0):
+      * Calculate prob = e^(-deltaE/T)
+      * Generate random number
+      * Accept if prob > random
+      * Higher temp → higher acceptance rate
+      * Lower temp → lower acceptance rate
+  
+  STEP 6: Update state (if accepted)
+    - Move to neighbor state
+    - Or stay at current state (if rejected)
+  
+  STEP 7: Cool down
+    - Reduce temperature: T = T * 0.995
+    - Next iteration will be "cooler"
+    - Gradually reduces exploration
+  
+  STEP 8: Increment iteration counter
+    - Track progress
+    - Check against max iterations
+
+TERMINATION:
+  - Goal found (h = 0): Success!
+  - Temperature too low: System frozen
+  - Max iterations: Gave up
+  - Display final state and statistics
+
+
+================================================================================
+WHY SIMULATED ANNEALING WORKS
+================================================================================
+
+THE PROBLEM WITH HILL CLIMBING:
+- Always takes best move
+- Gets stuck in local optima
+- Can't escape "valleys"
+
+THE SOLUTION - SIMULATED ANNEALING:
+- Sometimes accepts worse moves
+- High temperature: Accept most worse moves (explore freely)
+- Low temperature: Accept few worse moves (exploit current best)
+- Cooling schedule: Gradual transition from exploration to exploitation
+
+KEY INSIGHT:
+- Early: Wander freely, escape local optima
+- Late: Focus on refining current solution
+- Balance: Controlled by temperature and cooling rate
+
+ANALOGY:
+Like finding the lowest point in a landscape:
+- Hot: Jump around randomly, explore widely
+- Cooling: Jump smaller, explore locally
+- Cold: Settle into nearest valley
+- Goal: Find global minimum, not just local
+
+
+================================================================================
+PARAMETER EFFECTS
+================================================================================
+
+INITIAL TEMPERATURE (100.0):
+- Too low: Acts like greedy search, gets stuck
+- Too high: Too random, wastes time
+- Sweet spot: 10-1000 depending on problem
+
+COOLING RATE (0.995):
+- Too fast (0.9): Freezes before exploring enough
+- Too slow (0.999): Takes too long to converge
+- Sweet spot: 0.95-0.999
+
+MIN TEMPERATURE (0.01):
+- Too high: Stops before converging
+- Too low: Unnecessary iterations
+- Sweet spot: 0.001-0.1
+
+MAX ITERATIONS (10000):
+- Safety net to prevent infinite loops
+- Should be high enough to allow convergence
+
+
+================================================================================
+EXAMPLE RUN TRACE
+================================================================================
+
+Iteration 1: temp=100, h=8
+- Generate 4 neighbors with h = 9, 7, 8, 10
+- Randomly pick h=9 (worse by 1)
+- prob = e^(-1/100) ≈ 0.99 (99% chance)
+- Random = 0.35
+- 0.99 > 0.35 → ACCEPT worse move
+- Temp = 99.5
+
+Iteration 50: temp=60, h=5
+- Pick neighbor with h=6 (worse by 1)
+- prob = e^(-1/60) ≈ 0.98
+- Random = 0.99
+- 0.98 < 0.99 → REJECT
+- Stay at h=5
+- Temp = 59.7
+
+Iteration 500: temp=8, h=3
+- Pick neighbor with h=2 (better)
+- prob = 1.0 (always accept better)
+- ACCEPT
+- Move to h=2
+- Temp = 7.96
+
+Iteration 800: temp=1.5, h=0
+- Goal found!
+- TERMINATE
+
+
+This is the complete line-by-line explanation of Simulated Annealing!
+Every line of code explained in plain English with purpose and examples.
+
+================================================================================
