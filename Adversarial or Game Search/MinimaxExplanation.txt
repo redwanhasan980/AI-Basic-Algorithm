@@ -1,0 +1,193 @@
+===============================================================================
+                    MINIMAX ALGORITHM - TIC-TAC-TOE
+                         Simple Explanation
+===============================================================================
+
+WHAT IS MINIMAX?
+A decision-making algorithm for two-player games where one player tries to
+maximize their score (MAX) and the other tries to minimize it (MIN).
+
+===============================================================================
+                        HOW IT WORKS
+===============================================================================
+
+CORE CONCEPT:
+- AI (Maximizer) wants highest score
+- Human (Minimizer) wants lowest score
+- AI assumes human plays optimally
+
+SCORING:
+- AI wins: +10
+- Human wins: -10
+- Draw: 0
+
+ALGORITHM STEPS:
+
+1. CHECK TERMINAL STATE
+   - If someone won or draw, return score
+   - Otherwise, continue
+
+2. IF MAXIMIZING (AI's turn):
+   - Try all possible moves
+   - For each move:
+     * Place AI's mark
+     * Recursively call minimax (Human's turn)
+     * Undo the move
+   - Return MAXIMUM score
+
+3. IF MINIMIZING (Human's turn):
+   - Try all possible moves
+   - For each move:
+     * Place Human's mark
+     * Recursively call minimax (AI's turn)
+     * Undo the move
+   - Return MINIMUM score
+
+===============================================================================
+                        EXAMPLE GAME TREE
+===============================================================================
+
+Current Board:
+ X | O | X
+---|---|---
+ O |   |  
+---|---|---
+   |   |  
+
+AI's Turn (Maximize):
+- Try move at (1,1): Score = 0 (leads to draw)
+- Try move at (1,2): Score = 10 (AI wins!)  ← BEST
+- Try move at (2,0): Score = -10 (Human wins)
+- Try move at (2,1): Score = 0
+- Try move at (2,2): Score = 0
+
+AI chooses (1,2) with score 10
+
+===============================================================================
+                    CODE STRUCTURE EXPLAINED
+===============================================================================
+
+1. BOARD REPRESENTATION
+   char board[3][3];
+   - Simple 3x3 grid
+   - ' ' = empty, 'X' = AI, 'O' = Human
+
+2. CHECK WINNER
+   - Check all rows, columns, diagonals
+   - Return winner or ' ' if game continues
+   - Return 'D' for draw
+
+3. MINIMAX FUNCTION
+   minimax(isMaximizing)
+   
+   Base case:
+   - Check if game ended
+   - Return appropriate score
+   
+   Recursive case:
+   - Try all empty positions
+   - Make move, recurse, undo move
+   - Return best score for current player
+
+4. AI MOVE
+   - Call minimax for all possible moves
+   - Choose move with highest score
+   - Place AI's mark
+
+5. MAIN GAME LOOP
+   - Human makes move
+   - Check winner
+   - AI makes move
+   - Check winner
+   - Repeat until game ends
+
+===============================================================================
+                    SAMPLE EXECUTION TRACE
+===============================================================================
+
+Initial Board:
+   |   |  
+---|---|---
+   |   |  
+---|---|---
+   |   |  
+
+Human plays (1,1):
+   |   |  
+---|---|---
+   | O |  
+---|---|---
+   |   |  
+
+AI analyzes all moves using Minimax...
+AI plays (0,0):
+ X |   |  
+---|---|---
+   | O |  
+---|---|---
+   |   |  
+
+Human plays (0,2):
+ X |   | O
+---|---|---
+   | O |  
+---|---|---
+   |   |  
+
+AI plays (2,2) to block:
+ X |   | O
+---|---|---
+   | O |  
+---|---|---
+   |   | X
+
+...and so on until game ends (usually Draw with perfect play)
+
+===============================================================================
+                    WHY MINIMAX WORKS
+===============================================================================
+
+1. EXHAUSTIVE SEARCH
+   - Explores all possible game states
+   - Guaranteed to find optimal move
+
+2. RECURSIVE EVALUATION
+   - Evaluates future positions
+   - Looks ahead to game end
+
+3. OPTIMAL PLAY ASSUMPTION
+   - Assumes opponent plays perfectly
+   - Prepares for worst case
+
+4. BACKPROPAGATION
+   - Scores propagate up the tree
+   - Best moves bubble to top
+
+===============================================================================
+                    COMPLEXITY
+===============================================================================
+
+Time Complexity: O(b^d)
+- b = branching factor (max 9 for Tic-Tac-Toe)
+- d = depth (max 9 moves)
+- For Tic-Tac-Toe: ~9! ≈ 362,880 states (manageable)
+
+Space Complexity: O(d)
+- Recursive call stack depth
+
+For larger games, use:
+- Alpha-Beta Pruning (optimization)
+- Depth limiting
+- Heuristic evaluation
+
+===============================================================================
+                    KEY INSIGHTS
+===============================================================================
+
+1. Perfect Tic-Tac-Toe always ends in DRAW if both play optimally
+2. AI CANNOT LOSE with Minimax (will always draw or win)
+3. AI's first move is often CENTER or CORNER (strongest positions)
+4. Algorithm is DETERMINISTIC (same input = same output)
+5. Works for ANY two-player zero-sum game
+
+===============================================================================
