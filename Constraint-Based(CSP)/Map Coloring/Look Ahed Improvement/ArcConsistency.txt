@@ -1,0 +1,283 @@
+===============================================================================
+                    ARC CONSISTENCY (AC-3) ALGORITHM
+              Map Coloring with Constraint Propagation
+===============================================================================
+
+WHAT IS ARC CONSISTENCY?
+An arc (X, Y) is consistent if every value in X's domain has at least one 
+compatible value in Y's domain. AC-3 propagates constraints through the entire 
+network, detecting dead-ends early and reducing search space.
+
+KEY ADVANTAGE: More powerful than Forward Checking - propagates constraints 
+through multiple levels, not just immediate neighbors.
+
+===============================================================================
+FUNCTION 1: revise(xi, xj, domains, colors)
+===============================================================================
+PURPOSE: Check if arc (xi, xj) is consistent. Remove values from xi's domain 
+         that have no support in xj's domain.
+
+ALGORITHM:
+1. For each value vi in xi's domain:
+   
+   a) If xj is colored:
+      - Check if vi ≠ xj's color
+      - If different → vi has support
+      - If same → no support (neighbors can't have same color)
+   
+   b) If xj is uncolored:
+      - Search xj's domain for any value vj where vi ≠ vj
+      - If found → vi has support
+      - If not found → no support
+   
+2. Remove all values without support from xi's domain
+
+3. Return true if domain changed, false otherwise
+
+EXAMPLE:
+Node 1 domain: {Red, Blue, Green}
+Node 2 domain: {Red}
+Call: revise(1, 2, ...)
+
+Check Red:   Red = Red → No support, REMOVE
+Check Blue:  Blue ≠ Red → Has support, KEEP
+Check Green: Green ≠ Red → Has support, KEEP
+
+Result: Node 1 domain = {Blue, Green}, return true
+
+===============================================================================
+FUNCTION 2: AC3(node, adj, domains, colors, n)
+===============================================================================
+PURPOSE: Enforce arc consistency across entire constraint network using a 
+         queue-based propagation algorithm.
+
+ALGORITHM:
+
+STEP 1: Build Initial Queue
+- Add arc (i, j) for every uncolored node i and its neighbor j
+- Only uncolored nodes because colored ones have fixed values
+
+STEP 2: Process Queue
+While queue not empty:
+  a) Remove arc (xi, xj) from queue
+  
+  b) Call revise(xi, xj, ...)
+     - If no change → continue to next arc
+     - If domain changed → proceed to step c
+  
+  c) Check if xi's domain is empty
+     - If empty → return false (DEAD-END!)
+     - This is early failure detection
+  
+  d) Propagate: Add (xk, xi) for each neighbor xk of xi
+     - Skip xj (just checked)
+     - Skip colored nodes
+     - This ensures changes propagate through network
+
+STEP 3: Success
+- Queue empty and no empty domains → return true
+
+WHY PROPAGATION MATTERS:
+Graph: A—B—C—D
+Assign A=Red, revise B: Remove Red from B
+Now must revise C against B's new domain
+Then revise D against C's potentially new domain
+This cascade detects conflicts multiple steps away!
+
+EXAMPLE:
+Graph: 1—2—3 (linear), all domains {Red, Green}
+Assign Node 1 = Red
+
+Queue: (2,1), (2,3), (3,2)
+
+1. Revise (2,1): Remove Red from Node 2 → Domain 2 = {Green}
+   Propagate: Add (3,2) to queue
+   
+2. Revise (2,3): Node 2 has {Green}, Node 3 has {Red, Green}
+   No change needed
+   
+3. Revise (3,2): Node 2 has only {Green}
+   Remove Green from Node 3 → Domain 3 = {Red}
+   No neighbors to propagate to
+
+Result: Domains forced by AC-3:
+- Node 1: {Red} (assigned)
+- Node 2: {Green} (forced)
+- Node 3: {Red} (forced)
+
+===============================================================================
+FUNCTION 3: backtrackWithAC3(node, n, numColors, colors, adj, domains)
+===============================================================================
+PURPOSE: Backtracking search enhanced with Arc Consistency for early pruning.
+
+ALGORITHM:
+
+STEP 1: Base Case
+if (node > n) return true  // All nodes colored successfully
+
+STEP 2: Try Each Color
+For each color in current node's domain:
+  
+  a) Save State
+     - Backup all domains (for restoration)
+  
+  b) Assign Color
+     - colors[node] = color
+  
+  c) Run AC-3
+     if (AC3(...)):
+        - Constraints propagated successfully
+        - Recursively try next node
+        - if successful → return true
+     else:
+        - Dead-end detected immediately
+        - Don't explore further (PRUNING!)
+  
+  d) Backtrack
+     - Restore domains
+     - Uncolor node
+     - Try next color
+
+STEP 3: All Colors Failed
+return false  // Backtrack to previous node
+
+KEY BENEFIT: AC-3 detects failures early, avoiding exploration of doomed 
+subtrees. Much faster than naive backtracking.
+
+SEARCH EXAMPLE:
+Graph: 1—2—3, Colors: {Red, Green}
+
+Node 1 = Red
+  AC-3 reduces: Node 2 = {Green}, Node 3 = {Red, Green}
+  Node 2 = Green
+    AC-3 reduces: Node 3 = {Red}
+    Node 3 = Red → SUCCESS!
+
+Without AC-3, would also try Node 2 = Red (fails later).
+AC-3 removes Red from Node 2's domain immediately!
+
+===============================================================================
+FUNCTION 4: main()
+===============================================================================
+PURPOSE: Setup, solve, and display results.
+
+STEPS:
+1. Read input: n (nodes), m (edges), numColors
+2. Build adjacency list from edges
+3. Initialize: colors[i] = 0 (uncolored)
+4. Initialize: domains[i] = {1, 2, ..., numColors} for all nodes
+5. Solve: call backtrackWithAC3(1, n, ...)
+6. Display: Solution or "No solution" with statistics
+
+INPUT FORMAT:
+Line 1: n m numColors
+Next m lines: u v (edge between u and v)
+
+===============================================================================
+COMPLETE ALGORITHM FLOW
+===============================================================================
+
+1. INITIALIZATION
+   └─ All nodes uncolored, all domains = all colors
+
+2. SELECT NODE & COLOR
+   └─ Choose node, try first color from its domain
+
+3. ASSIGN & PROPAGATE (AC-3)
+   ├─ Assign color to node
+   ├─ Build queue of arcs
+   ├─ Process each arc:
+   │  ├─ Revise: Remove unsupported values
+   │  ├─ Empty domain? → FAILURE (backtrack)
+   │  └─ Domain changed? → Add neighbor arcs
+   └─ Queue empty → Consistency achieved
+
+4. DECISION
+   ├─ AC-3 SUCCESS → Try next node (recursive)
+   └─ AC-3 FAILURE → Backtrack (try different color)
+
+5. RESULT
+   ├─ All nodes colored → SOLUTION
+   └─ All possibilities tried → NO SOLUTION
+
+===============================================================================
+AC-3 vs FORWARD CHECKING
+===============================================================================
+
+FORWARD CHECKING:
+- Checks only immediate neighbors (1 level)
+- Faster per node
+- Less pruning
+
+ARC CONSISTENCY (AC-3):
+- Propagates through entire network (multiple levels)
+- More computation per node
+- Much more pruning → Explores fewer nodes
+- Better for hard problems
+
+EXAMPLE:
+Graph: A—B—C—D—E (chain)
+Assign A=Red
+
+Forward Checking: Removes Red from B only
+AC-3: Removes Red from B, then propagates to C, D, E
+
+===============================================================================
+COMPLEXITY
+===============================================================================
+
+TIME: O(ed³) 
+- e = number of arcs (edges)
+- d = domain size
+- Each arc processed at most d times
+
+SPACE: O(nd + e)
+- n = nodes
+- d = domain size
+- e = queue size
+
+===============================================================================
+SAMPLE RUN
+===============================================================================
+
+INPUT:
+4 4 3
+1 2
+1 3
+2 3
+3 4
+
+Graph: Triangle (1-2-3) + Node 4 connected to 3
+
+EXECUTION:
+Try Node 1 = Color 1
+  AC-3: Domains become: 2={2,3}, 3={2,3}, 4={1,2,3}
+Try Node 2 = Color 2
+  AC-3: Domains become: 3={3}, 4={1,2,3}
+Try Node 3 = Color 3 (only choice!)
+  AC-3: Domains become: 4={1,2}
+Try Node 4 = Color 1
+  AC-3: Consistent!
+  SOLUTION FOUND!
+
+OUTPUT:
+Node 1 -> Color 1
+Node 2 -> Color 2
+Node 3 -> Color 3
+Node 4 -> Color 1
+
+Statistics:
+Arc revisions: ~18
+Domain reductions: 6
+
+===============================================================================
+KEY TAKEAWAYS
+===============================================================================
+
+1. AC-3 maintains arc consistency by ensuring every value has support
+2. Propagates constraints through entire network (powerful!)
+3. Detects dead-ends early before exploring doomed subtrees
+4. More work per node but explores exponentially fewer nodes
+5. Essential for solving hard constraint satisfaction problems efficiently
+
+===============================================================================

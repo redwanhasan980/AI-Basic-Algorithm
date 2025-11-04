@@ -1,0 +1,24 @@
+Trying Node 1 with Color 1
+  [AC-3 PASSED] Arc consistency maintained
+Trying Node 2 with Color 2
+  [AC-3 FAILED] Inconsistency detected, pruning branch
+  Backtracking from Node 2, Color 2
+  Backtracking from Node 1, Color 1
+Trying Node 1 with Color 3
+  [AC-3 PASSED] Arc consistency maintained
+Trying Node 2 with Color 1
+  [AC-3 FAILED] Inconsistency detected, pruning branch
+  Backtracking from Node 2, Color 1
+  Backtracking from Node 1, Color 3
+Trying Node 1 with Color 2
+  [AC-3 PASSED] Arc consistency maintained
+Trying Node 2 with Color 1
+  [AC-3 FAILED] Inconsistency detected, pruning branch
+  Backtracking from Node 2, Color 1
+  Backtracking from Node 1, Color 2
+No solution exists with 3 colors.
+
+=== ARC CONSISTENCY (AC-3) STATISTICS ===
+Total arc revisions: 168
+Total domain reductions: 21
+=========================================
