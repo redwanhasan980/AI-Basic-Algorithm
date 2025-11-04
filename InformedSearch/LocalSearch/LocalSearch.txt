@@ -1,0 +1,15 @@
+Some Problem doesnt need to find the path 
+the goal state itself is the solution.
+Local Search algorithms are suitable for such problems.
+They operate using a single current state and
+attempt to find a better state in its immediate vicinity.
+They do not maintain a search tree or graph of previously explored states.
+Local Search algorithms are often used for optimization problems,
+where the objective is to find the best solution among many possible solutions.
+Examples of Local Search algorithms include:
+- Hill Climbing
+- Simulated Annealing
+- Genetic Algorithms
+- Constraint Satisfaction Problems (CSP) solvers
+These algorithms iteratively improve the current state
+based on a defined evaluation function. The evaluation function
